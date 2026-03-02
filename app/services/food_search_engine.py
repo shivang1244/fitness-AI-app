@@ -11,6 +11,9 @@ class FoodSearchEngine:
         gpt_client
     ) -> Dict[str, Any]:
 
+        if not isinstance(food_name, str):
+            raise ValueError("Food name must be a string")
+
         prompt = self.build_prompt(food_name, grams)
 
         response = gpt_client(prompt)
@@ -30,14 +33,7 @@ Provide nutritional breakdown for:
 Food: {food_name}
 Quantity: {grams} grams
 
-Requirements:
-- Provide realistic nutritional values.
-- Be accurate and practical.
-- Educational tone only.
-- No explanations outside JSON.
-- Do NOT add extra commentary.
-
-Return STRICT JSON format:
+Return STRICT JSON:
 
 {{
   "food_name": "{food_name}",
@@ -57,14 +53,31 @@ Return STRICT JSON format:
 """
 
     # =====================================================
-    # SAFE JSON PARSER
+    # SAFE JSON PARSER (UPDATED)
     # =====================================================
-    def safe_json_parse(self, response: str):
+    def safe_json_parse(self, response):
+
+        # If LLMClient already returned dict → return directly
+        if isinstance(response, dict):
+            return response
+
+        # If not string → invalid
+        if not isinstance(response, str):
+            raise ValueError("Invalid GPT response type")
 
         try:
             return json.loads(response)
         except Exception:
             cleaned = response.strip()
+
+            if cleaned.startswith("```"):
+                cleaned = cleaned.replace("```json", "")
+                cleaned = cleaned.replace("```", "").strip()
+
             start = cleaned.find("{")
-            end = cleaned.rfind("}") + 1
-            return json.loads(cleaned[start:end])
+            end = cleaned.rfind("}")
+
+            if start != -1 and end != -1:
+                cleaned = cleaned[start:end + 1]
+
+            return json.loads(cleaned)

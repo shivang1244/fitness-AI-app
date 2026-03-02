@@ -12,15 +12,17 @@ from app.services.diet_engine import DietEngine
 from app.services.calorie_engine import CalorieEngine
 from app.services.progress_engine import ProgressEngine
 from app.services.compliance_engine import ComplianceEngine
+from app.services.llm_client import LLMClient  # ✅ NEW
 
 router = APIRouter()
 
+# =====================================================
+# GLOBAL LLM CLIENT (OpenRouter)
+# =====================================================
+llm = LLMClient()
 
-# =====================================================
-# GPT WRAPPER (Replace with real GPT integration)
-# =====================================================
 def gpt_client(prompt: str):
-    raise NotImplementedError("Connect GPT API here.")
+    return llm.generate(prompt)
 
 
 # =====================================================
@@ -80,7 +82,7 @@ def build_user_context(db: Session, user_id):
 
 
 # =====================================================
-# CALCULATE TARGET MACROS (INTELLIGENT VERSION)
+# CALCULATE TARGET MACROS
 # =====================================================
 def calculate_target_macros(db: Session, user_id):
 
@@ -138,10 +140,7 @@ def calculate_target_macros(db: Session, user_id):
         goal_type=goal.goal_type
     )
 
-    # =====================================================
-    # 🔥 STEP 2 — PROGRESS ENGINE ADAPTATION
-    # =====================================================
-
+    # 🔥 Progress Adaptation
     measurements = (
         db.query(BodyMeasurement)
         .filter(BodyMeasurement.user_id == user_id)
@@ -151,28 +150,20 @@ def calculate_target_macros(db: Session, user_id):
     )
 
     progress_engine = ProgressEngine()
-
     progress = progress_engine.analyze_progress(
         measurements=measurements,
         active_goal=goal
     )
 
-    # Increase protein if muscle loss
     if progress.get("muscle_loss_warning"):
         target_macros["protein"] *= 1.15
-
-    # Slight protein boost on plateau
     elif progress.get("plateau_detected"):
         target_macros["protein"] *= 1.08
 
     target_macros["protein"] = round(target_macros["protein"], 2)
 
-    # =====================================================
-    # 🔥 STEP 3 — COMPLIANCE ADAPTATION
-    # =====================================================
-
+    # 🔥 Compliance Adaptation
     compliance_engine = ComplianceEngine()
-
     compliance = compliance_engine.analyze_compliance(
         db=db,
         user_id=user_id
@@ -180,11 +171,8 @@ def calculate_target_macros(db: Session, user_id):
 
     compliance_percent = compliance.get("calorie_compliance_percent", 100)
 
-    # Under-eating consistently → reduce slightly
     if compliance_percent < 75:
         target_macros["calories"] *= 0.95
-
-    # Over-eating consistently → tighten slightly
     elif compliance_percent > 110:
         target_macros["calories"] *= 0.97
 
@@ -207,15 +195,13 @@ def generate_diet(
 
     engine = DietEngine()
 
-    result = engine.generate_daily_plan(
+    return engine.generate_daily_plan(
         db=db,
         user_id=current_user.id,
         target_macros=target_macros,
         user_context=context,
         gpt_client=gpt_client
     )
-
-    return result
 
 
 # =====================================================
@@ -232,15 +218,13 @@ def regenerate_diet(
 
     engine = DietEngine()
 
-    result = engine.regenerate_plan(
+    return engine.regenerate_plan(
         db=db,
         user_id=current_user.id,
         target_macros=target_macros,
         user_context=context,
         gpt_client=gpt_client
     )
-
-    return result
 
 
 # =====================================================
@@ -256,11 +240,9 @@ def modify_diet(
 
     engine = DietEngine()
 
-    result = engine.modify_plan(
+    return engine.modify_plan(
         db=db,
         user_id=current_user.id,
         action=action,
-        data=payload
+        payload=payload
     )
-
-    return result

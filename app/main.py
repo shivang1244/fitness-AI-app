@@ -27,6 +27,8 @@ from app.api.v1.endpoints.nutrition import router as nutrition_router
 from app.models.food_log import FoodLog
 from app.api.v1.endpoints.food_log import router as food_log_router
 from app.api.v1.endpoints.food import router as food_router
+from dotenv import load_dotenv
+load_dotenv()
 app = FastAPI(
     title="Fitness AI Backend",
     description="AI Human Optimization Platform Backend",

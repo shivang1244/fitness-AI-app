@@ -13,9 +13,12 @@ router = APIRouter()
 
 
 # Temporary GPT wrapper (connect real GPT later)
-def gpt_client(prompt: str):
-    raise NotImplementedError("Connect GPT API here.")
+from app.services.llm_client import LLMClient
 
+llm = LLMClient()
+
+def gpt_client(prompt: str):
+    return llm.generate(prompt)
 
 # =====================================================
 # 1️⃣ LOG SUGGESTED MEAL

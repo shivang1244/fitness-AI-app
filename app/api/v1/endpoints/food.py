@@ -4,18 +4,19 @@ from sqlalchemy.orm import Session
 from app.core.dependencies import get_db, get_current_user
 from app.models.users import User
 from app.services.food_search_engine import FoodSearchEngine
-
+from app.services.llm_client import LLMClient
 router = APIRouter()
 
 
 # TEMP GPT WRAPPER
+llm = LLMClient()
 def gpt_client(prompt: str):
-    raise NotImplementedError("Connect GPT API here.")
-
+    return llm.generate(prompt)
 
 @router.get("/food/search")
 def search_food(
     food: str = Query(...),
+
     grams: float = Query(...),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)

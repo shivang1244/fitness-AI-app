@@ -14,13 +14,12 @@ router = APIRouter()
 # =====================================================
 # GPT CLIENT WRAPPER (TEMP – Replace With Real API)
 # =====================================================
-def gpt_client(prompt: str):
-    """
-    Replace this with your real OpenAI API call.
-    For now this raises error to remind integration required.
-    """
-    raise NotImplementedError("Connect GPT API here.")
+from app.services.llm_client import LLMClient
 
+llm = LLMClient()
+
+def gpt_client(prompt: str):
+    return llm.generate(prompt)
 
 # =====================================================
 # 1️⃣ DIET PLAN GENERATION
